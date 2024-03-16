@@ -1,1 +1,0 @@
-Filter<std::iter::Take<Map<std::io::Lines<StdinLock<'_>>, {closure@C:\Users\White\Storage\project\kattis-solution\training\training.rs:2:50: 2:53}>>, {closure@C:\Users\White\Storage\project\kattis-solution\training\training.rs:10:44: 10:47}>

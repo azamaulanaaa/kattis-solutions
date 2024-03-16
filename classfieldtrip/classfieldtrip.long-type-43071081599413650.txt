@@ -1,1 +1,0 @@
-Flatten<Map<std::iter::Take<Map<std::io::Lines<StdinLock<'_>>, {closure@C:\Users\azama\Projects\kattis-solution\classfieldtrip\classfieldtrip.rs:2:50: 2:53}>>, {closure@C:\Users\azama\Projects\kattis-solution\classfieldtrip\classfieldtrip.rs:5:14: 5:17}>>
