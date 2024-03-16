@@ -1,6 +1,6 @@
 fn main() {
     let lines = std::io::stdin().lines().map(|x| x.unwrap());
-    let verteces = lines
+    let vertices = lines
         .take(3)
         .map(|x| {
             x.split(" ")
@@ -9,9 +9,9 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    let u = &verteces[0];
-    let v = &verteces[1];
-    let w = &verteces[2];
+    let u = &vertices[0];
+    let v = &vertices[1];
+    let w = &vertices[2];
 
     let a = vec![norm_sqr(u) - norm_sqr(v), norm_sqr(v) - norm_sqr(w)];
 
