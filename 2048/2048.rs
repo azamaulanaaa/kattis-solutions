@@ -151,11 +151,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let direction = Direction::try_from(lines[4].as_str())?;
 
-    let repeat = direction as u8;
-
-    let matrix = (0..repeat).try_fold(matrix, |matrix, _| matrix.rotate_270())?;
-    let matrix = matrix.slide();
-    let matrix = (0..repeat).try_fold(matrix, |matrix, _| matrix.rotate_90())?;
+    let matrix = match direction {
+        Direction::Left => matrix.slide(),
+        Direction::Up => matrix.rotate_270()?.slide().rotate_90()?,
+        Direction::Right => matrix.reverse().slide().reverse(),
+        Direction::Down => matrix.rotate_90()?.slide().rotate_270()?,
+    };
 
     println!("{}", matrix);
 
