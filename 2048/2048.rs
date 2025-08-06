@@ -1,6 +1,9 @@
+use std::array;
 use std::convert::TryFrom;
 use std::error::Error;
 use std::fmt::Display;
+use std::mem;
+use std::ops::{Add, Deref};
 
 #[repr(u8)]
 enum Direction {
@@ -24,9 +27,61 @@ impl TryFrom<&str> for Direction {
     }
 }
 
-struct SquareMatrix<T>(Vec<Vec<T>>);
+struct SquareMatrix<T, const N: usize>([[T; N]; N]);
 
-impl<T> TryFrom<Vec<Vec<T>>> for SquareMatrix<T> {
+impl<T, const N: usize> SquareMatrix<T, N> {
+    pub fn size(&self) -> usize {
+        N
+    }
+
+    pub fn transpose(self) -> Self {
+        let mut matrix = self.0;
+
+        for i in 0..N {
+            for j in (i + 1)..N {
+                let (first, second) = matrix.split_at_mut(i + 1);
+                mem::swap(&mut first[i][j], &mut second[j - i - 1][i]);
+            }
+        }
+
+        SquareMatrix(matrix)
+    }
+
+    pub fn flip_y_axis(self) -> Self {
+        let matrix = self.0.map(|e| {
+            let mut e = e;
+            e.reverse();
+            e
+        });
+
+        SquareMatrix(matrix)
+    }
+
+    pub fn flip_x_axis(self) -> Self {
+        let mut matrix = self.0;
+        matrix.reverse();
+
+        SquareMatrix(matrix)
+    }
+
+    pub fn rotate_left(self) -> Self {
+        self.flip_y_axis().transpose()
+    }
+
+    pub fn rotate_right(self) -> Self {
+        self.transpose().flip_y_axis()
+    }
+}
+
+impl<T, const N: usize> Deref for SquareMatrix<T, N> {
+    type Target = [[T; N]; N];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T, const N: usize> TryFrom<Vec<Vec<T>>> for SquareMatrix<T, N> {
     type Error = String;
 
     fn try_from(value: Vec<Vec<T>>) -> Result<Self, Self::Error> {
@@ -34,12 +89,15 @@ impl<T> TryFrom<Vec<Vec<T>>> for SquareMatrix<T> {
         if value.iter().any(|e| e.len() != size) {
             return Err(String::from("matrix size is not NxN").into());
         }
+        let mut value = value;
 
-        Ok(SquareMatrix(value))
+        Ok(SquareMatrix(array::from_fn(|i| {
+            array::from_fn(|_| value[i].remove(0))
+        })))
     }
 }
 
-impl<T: Display> Display for SquareMatrix<T> {
+impl<T: Display, const N: usize> Display for SquareMatrix<T, N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
@@ -57,78 +115,43 @@ impl<T: Display> Display for SquareMatrix<T> {
     }
 }
 
-impl<T> SquareMatrix<T> {
-    pub fn size(&self) -> usize {
-        self.0.len()
-    }
+impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
+    pub fn slide_to_left(self) -> Self {
+        let matrix = self.0;
+        let matrix = matrix.map(|row| {
+            let mut row = row;
+            for i in 0..N {
+                if row.each_ref()[i..] == [&T::default()].repeat(N - i) {
+                    break;
+                }
 
-    pub fn transpose(self) -> Result<Self, Box<dyn Error>> {
-        let size = self.size();
+                while row[i] == T::default() {
+                    row[i..].rotate_left(1);
+                }
 
-        let mut matrix = self
-            .0
-            .into_iter()
-            .map(|row| row.into_iter())
-            .collect::<Vec<_>>();
-        let matrix = (0..size)
-            .map(|_| {
-                matrix
-                    .iter_mut()
-                    .map(|row| row.next().unwrap())
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
+                if i == 0 {
+                    continue;
+                }
 
-        Ok(SquareMatrix(matrix))
-    }
+                if row[i - 1] == row[i] {
+                    let mut x = T::default();
+                    let mut y = T::default();
+                    mem::swap(&mut x, &mut row[i - 1]);
+                    mem::swap(&mut y, &mut row[i]);
+                    row[i - 1] = x + y;
 
-    pub fn reverse(self) -> Self {
-        let matrix = self
-            .0
-            .into_iter()
-            .map(|row| row.into_iter().rev().collect::<Vec<_>>())
-            .collect::<Vec<_>>();
+                    if row.each_ref()[i..] == [&T::default()].repeat(N - i) {
+                        break;
+                    }
 
-        SquareMatrix(matrix)
-    }
+                    while row[i] == T::default() {
+                        row[i..].rotate_left(1);
+                    }
+                }
+            }
 
-    pub fn rotate_90(self) -> Result<Self, Box<dyn Error>> {
-        let matrix = self.transpose()?.reverse();
-
-        Ok(matrix)
-    }
-
-    pub fn rotate_270(self) -> Result<Self, Box<dyn Error>> {
-        let matrix = self.reverse().transpose()?;
-
-        Ok(matrix)
-    }
-}
-
-impl SquareMatrix<usize> {
-    pub fn slide(self) -> Self {
-        let len = self.size();
-        let matrix = self
-            .0
-            .into_iter()
-            .map(|row| {
-                let mut row = row.into_iter().filter(|e| *e != 0).peekable();
-
-                (0..len)
-                    .map(|_| {
-                        let mut current = match row.next() {
-                            Some(v) => v,
-                            None => return 0,
-                        };
-                        if let Some(next) = row.next_if_eq(&current) {
-                            current = current + next
-                        }
-
-                        current
-                    })
-                    .collect()
-            })
-            .collect();
+            row
+        });
 
         SquareMatrix(matrix)
     }
@@ -138,7 +161,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let lines = std::io::stdin().lines().into_iter();
     let lines = lines.take(5).collect::<Result<Vec<String>, _>>()?;
 
-    let matrix = lines[0..4]
+    let matrix = lines
         .iter()
         .map(|line| {
             line.split(" ")
@@ -147,15 +170,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .collect::<Result<Vec<_>, _>>()
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let matrix = SquareMatrix::try_from(matrix)?;
+    let matrix = SquareMatrix::<_, 4>::try_from(matrix)?;
 
     let direction = Direction::try_from(lines[4].as_str())?;
 
     let matrix = match direction {
-        Direction::Left => matrix.slide(),
-        Direction::Up => matrix.rotate_270()?.slide().rotate_90()?,
-        Direction::Right => matrix.reverse().slide().reverse(),
-        Direction::Down => matrix.rotate_90()?.slide().rotate_270()?,
+        Direction::Left => matrix.slide_to_left(),
+        Direction::Up => matrix.rotate_left().slide_to_left().rotate_right(),
+        Direction::Right => matrix.flip_y_axis().slide_to_left().flip_y_axis(),
+        Direction::Down => matrix.rotate_right().slide_to_left().rotate_left(),
     };
 
     println!("{}", matrix);
