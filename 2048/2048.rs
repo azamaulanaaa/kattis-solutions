@@ -170,17 +170,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (direction, matrix) = lines.split_last().unwrap();
 
-    let matrix = matrix
-        .into_iter()
-        .map(|line| {
-            line.split_whitespace()
-                .map(|v| v.parse::<usize>())
-                .collect::<Result<Vec<_>, _>>()
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let matrix = SquareMatrix::<_, 4>::try_from(matrix)?;
-
     let direction = Direction::try_from(direction.as_str())?;
+    let matrix = {
+        let matrix = matrix
+            .into_iter()
+            .map(|line| {
+                line.split_whitespace()
+                    .map(|v| v.parse::<usize>())
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let matrix = SquareMatrix::<_, 4>::try_from(matrix)?;
+        matrix
+    };
 
     let matrix = matrix.slide(direction);
 
