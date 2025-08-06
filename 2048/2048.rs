@@ -2,7 +2,6 @@ use std::array;
 use std::convert::TryFrom;
 use std::error::Error;
 use std::fmt::Display;
-use std::fs::read;
 use std::mem;
 use std::ops::{Add, Deref};
 
