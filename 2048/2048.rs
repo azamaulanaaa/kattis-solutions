@@ -85,11 +85,21 @@ impl<T, const N: usize> TryFrom<Vec<Vec<T>>> for SquareMatrix<T, N> {
     type Error = String;
 
     fn try_from(value: Vec<Vec<T>>) -> Result<Self, Self::Error> {
-        if value.iter().any(|e| e.len() != N) {
-            return Err(String::from("matrix size is not NxN").into());
+        if value.len() != N {
+            return Err(format!(
+                "Matrix must have {N} rows, but it has {}",
+                value.len()
+            ));
         }
-        let mut value = value;
 
+        if let Some(row) = value.iter().find(|row| row.len() != N) {
+            return Err(format!(
+                "Matrix row must have {N} columns, but it has {}",
+                row.len()
+            ));
+        }
+
+        let mut value = value;
         Ok(SquareMatrix(array::from_fn(|i| {
             array::from_fn(|_| value[i].remove(0))
         })))
