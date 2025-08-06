@@ -121,12 +121,12 @@ impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
         let matrix = matrix.map(|row| {
             let mut row = row;
             for i in 0..N {
-                if row.each_ref()[i..] == [&T::default()].repeat(N - i) {
+                if row[i..].iter().any(|e| *e != T::default()) {
+                    while row[i] == T::default() {
+                        row[i..].rotate_left(1);
+                    }
+                } else {
                     break;
-                }
-
-                while row[i] == T::default() {
-                    row[i..].rotate_left(1);
                 }
 
                 if i == 0 {
@@ -140,12 +140,12 @@ impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
                     mem::swap(&mut y, &mut row[i]);
                     row[i - 1] = x + y;
 
-                    if row.each_ref()[i..] == [&T::default()].repeat(N - i) {
+                    if row[i..].iter().any(|e| e != &T::default()) {
+                        while row[i] == T::default() {
+                            row[i..].rotate_left(1);
+                        }
+                    } else {
                         break;
-                    }
-
-                    while row[i] == T::default() {
-                        row[i..].rotate_left(1);
                     }
                 }
             }
