@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use std::error::Error;
+use std::fmt::Display;
 
 #[repr(u8)]
 enum Direction {
@@ -35,6 +36,24 @@ impl<T> TryFrom<Vec<Vec<T>>> for SquareMatrix<T> {
         }
 
         Ok(SquareMatrix(value))
+    }
+}
+
+impl<T: Display> Display for SquareMatrix<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}",
+            self.0
+                .iter()
+                .map(|row| row
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "))
+                .collect::<Vec<_>>()
+                .join("\n")
+        )
     }
 }
 
@@ -138,19 +157,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let matrix = matrix.slide();
     let matrix = (0..repeat).try_fold(matrix, |matrix, _| matrix.rotate_90())?;
 
-    println!(
-        "{}",
-        matrix
-            .0
-            .into_iter()
-            .map(|row| row
-                .into_iter()
-                .map(|e| e.to_string())
-                .collect::<Vec<_>>()
-                .join(" "))
-            .collect::<Vec<_>>()
-            .join("\n")
-    );
+    println!("{}", matrix);
 
     Ok(())
 }
