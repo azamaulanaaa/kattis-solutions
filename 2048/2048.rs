@@ -85,8 +85,7 @@ impl<T, const N: usize> TryFrom<Vec<Vec<T>>> for SquareMatrix<T, N> {
     type Error = String;
 
     fn try_from(value: Vec<Vec<T>>) -> Result<Self, Self::Error> {
-        let size = value.len();
-        if value.iter().any(|e| e.len() != size) {
+        if value.iter().any(|e| e.len() != N) {
             return Err(String::from("matrix size is not NxN").into());
         }
         let mut value = value;
@@ -117,32 +116,20 @@ impl<T: Display, const N: usize> Display for SquareMatrix<T, N> {
 
 impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
     fn slide_to_left(self) -> Self {
-        let matrix = self.0;
-        let matrix = matrix.map(|row| {
+        let matrix = self.0.map(|row| {
             let mut row = row;
-            for i in 0..N {
-                if row[i..].iter().any(|e| *e != T::default()) {
-                    while row[i] == T::default() {
-                        row[i..].rotate_left(1);
-                    }
-                } else {
-                    break;
-                }
 
-                if i == 0 {
-                    continue;
-                }
-
-                if row[i - 1] == row[i] {
-                    row[i - 1] = mem::take(&mut row[i - 1]) + mem::take(&mut row[i]);
-
-                    if row[i..].iter().any(|e| e != &T::default()) {
-                        while row[i] == T::default() {
-                            row[i..].rotate_left(1);
-                        }
+            for i in 0..N - 1 {
+                for j in i..i + 2 {
+                    if let Some(k) = row[j..].iter().position(|e| *e != T::default()) {
+                        row.swap(j, j + k);
                     } else {
                         break;
                     }
+                }
+
+                if row[i] == row[i + 1] {
+                    row[i] = mem::take(&mut row[i]) + mem::take(&mut row[i + 1]);
                 }
             }
 
