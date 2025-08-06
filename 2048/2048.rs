@@ -90,26 +90,26 @@ fn slide(matrix: Vec<Vec<usize>>) -> Vec<Vec<usize>> {
         .collect()
 }
 
-fn main() {
-    let lines = std::io::stdin().lines().into_iter().map(|e| e.unwrap());
-    let lines = lines.take(5).collect::<Vec<String>>();
+fn main() -> Result<(), Box<dyn Error>> {
+    let lines = std::io::stdin().lines().into_iter();
+    let lines = lines.take(5).collect::<Result<Vec<String>, _>>()?;
 
     let matrix = lines[0..4]
         .iter()
         .map(|line| {
             line.split(" ")
                 .take(4)
-                .map(|v| v.parse::<usize>().unwrap())
-                .collect::<Vec<_>>()
+                .map(|v| v.parse::<usize>())
+                .collect::<Result<Vec<_>, _>>()
         })
-        .collect::<Vec<_>>();
-    let direction = Direction::try_from(lines[4].as_str()).unwrap();
+        .collect::<Result<Vec<_>, _>>()?;
+    let direction = Direction::try_from(lines[4].as_str())?;
 
     let repeat = direction as u8;
 
-    let matrix = (0..repeat).fold(matrix, |matrix, _| rotate_270(matrix).unwrap());
+    let matrix = (0..repeat).try_fold(matrix, |matrix, _| rotate_270(matrix))?;
     let matrix = slide(matrix);
-    let matrix = (0..repeat).fold(matrix, |matrix, _| rotate_90(matrix).unwrap());
+    let matrix = (0..repeat).try_fold(matrix, |matrix, _| rotate_90(matrix))?;
 
     println!(
         "{}",
@@ -123,4 +123,6 @@ fn main() {
             .collect::<Vec<_>>()
             .join("\n")
     );
+
+    Ok(())
 }
