@@ -23,71 +23,96 @@ impl TryFrom<&str> for Direction {
     }
 }
 
-fn transpose<T>(matrix: Vec<Vec<T>>) -> Result<Vec<Vec<T>>, Box<dyn Error>> {
-    let size = matrix.len();
-    if matrix.iter().any(|e| e.len() != size) {
-        return Err(String::from("matrix size is not NxN").into());
+struct SquareMatrix<T>(Vec<Vec<T>>);
+
+impl<T> TryFrom<Vec<Vec<T>>> for SquareMatrix<T> {
+    type Error = String;
+
+    fn try_from(value: Vec<Vec<T>>) -> Result<Self, Self::Error> {
+        let size = value.len();
+        if value.iter().any(|e| e.len() != size) {
+            return Err(String::from("matrix size is not NxN").into());
+        }
+
+        Ok(SquareMatrix(value))
+    }
+}
+
+impl<T> SquareMatrix<T> {
+    pub fn size(&self) -> usize {
+        self.0.len()
     }
 
-    let mut matrix = matrix
-        .into_iter()
-        .map(|row| row.into_iter())
-        .collect::<Vec<_>>();
-    let matrix = (0..size)
-        .map(|_| {
-            matrix
-                .iter_mut()
-                .map(|row| row.next().unwrap())
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
+    pub fn transpose(self) -> Result<Self, Box<dyn Error>> {
+        let size = self.size();
 
-    Ok(matrix)
+        let mut matrix = self
+            .0
+            .into_iter()
+            .map(|row| row.into_iter())
+            .collect::<Vec<_>>();
+        let matrix = (0..size)
+            .map(|_| {
+                matrix
+                    .iter_mut()
+                    .map(|row| row.next().unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        Ok(SquareMatrix(matrix))
+    }
+
+    pub fn reverse(self) -> Self {
+        let matrix = self
+            .0
+            .into_iter()
+            .map(|row| row.into_iter().rev().collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+
+        SquareMatrix(matrix)
+    }
+
+    pub fn rotate_90(self) -> Result<Self, Box<dyn Error>> {
+        let matrix = self.transpose()?.reverse();
+
+        Ok(matrix)
+    }
+
+    pub fn rotate_270(self) -> Result<Self, Box<dyn Error>> {
+        let matrix = self.reverse().transpose()?;
+
+        Ok(matrix)
+    }
 }
 
-fn reverse<T>(matrix: Vec<Vec<T>>) -> Vec<Vec<T>> {
-    matrix
-        .into_iter()
-        .map(|row| row.into_iter().rev().collect::<Vec<_>>())
-        .collect::<Vec<_>>()
-}
+impl SquareMatrix<usize> {
+    pub fn slide(self) -> Self {
+        let len = self.size();
+        let matrix = self
+            .0
+            .into_iter()
+            .map(|row| {
+                let mut row = row.into_iter().filter(|e| *e != 0).peekable();
 
-fn rotate_90<T>(matrix: Vec<Vec<T>>) -> Result<Vec<Vec<T>>, Box<dyn Error>> {
-    let matrix = transpose(matrix)?;
-    let matrix = reverse(matrix);
+                (0..len)
+                    .map(|_| {
+                        let mut current = match row.next() {
+                            Some(v) => v,
+                            None => return 0,
+                        };
+                        if let Some(next) = row.next_if_eq(&current) {
+                            current = current + next
+                        }
 
-    Ok(matrix)
-}
+                        current
+                    })
+                    .collect()
+            })
+            .collect();
 
-fn rotate_270<T>(matrix: Vec<Vec<T>>) -> Result<Vec<Vec<T>>, Box<dyn Error>> {
-    let matrix = reverse(matrix);
-    let matrix = transpose(matrix)?;
-
-    Ok(matrix)
-}
-
-fn slide(matrix: Vec<Vec<usize>>) -> Vec<Vec<usize>> {
-    let len = matrix.len();
-    matrix
-        .into_iter()
-        .map(|row| {
-            let mut row = row.into_iter().filter(|e| *e != 0).peekable();
-
-            (0..len)
-                .map(|_| {
-                    let mut current = match row.next() {
-                        Some(v) => v,
-                        None => return 0,
-                    };
-                    if let Some(next) = row.next_if_eq(&current) {
-                        current = current + next
-                    }
-
-                    current
-                })
-                .collect()
-        })
-        .collect()
+        SquareMatrix(matrix)
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -103,17 +128,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .collect::<Result<Vec<_>, _>>()
         })
         .collect::<Result<Vec<_>, _>>()?;
+    let matrix = SquareMatrix::try_from(matrix)?;
+
     let direction = Direction::try_from(lines[4].as_str())?;
 
     let repeat = direction as u8;
 
-    let matrix = (0..repeat).try_fold(matrix, |matrix, _| rotate_270(matrix))?;
-    let matrix = slide(matrix);
-    let matrix = (0..repeat).try_fold(matrix, |matrix, _| rotate_90(matrix))?;
+    let matrix = (0..repeat).try_fold(matrix, |matrix, _| matrix.rotate_270())?;
+    let matrix = matrix.slide();
+    let matrix = (0..repeat).try_fold(matrix, |matrix, _| matrix.rotate_90())?;
 
     println!(
         "{}",
         matrix
+            .0
             .into_iter()
             .map(|row| row
                 .into_iter()
