@@ -116,7 +116,7 @@ impl<T: Display, const N: usize> Display for SquareMatrix<T, N> {
 }
 
 impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
-    pub fn slide_to_left(self) -> Self {
+    fn slide_to_left(self) -> Self {
         let matrix = self.0;
         let matrix = matrix.map(|row| {
             let mut row = row;
@@ -151,6 +151,17 @@ impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
 
         SquareMatrix(matrix)
     }
+
+    pub fn slide(self, direction: Direction) -> Self {
+        let matrix = match direction {
+            Direction::Left => self.slide_to_left(),
+            Direction::Up => self.rotate_left().slide_to_left().rotate_right(),
+            Direction::Right => self.flip_y_axis().slide_to_left().flip_y_axis(),
+            Direction::Down => self.rotate_right().slide_to_left().rotate_left(),
+        };
+
+        matrix
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -171,12 +182,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let direction = Direction::try_from(direction.as_str())?;
 
-    let matrix = match direction {
-        Direction::Left => matrix.slide_to_left(),
-        Direction::Up => matrix.rotate_left().slide_to_left().rotate_right(),
-        Direction::Right => matrix.flip_y_axis().slide_to_left().flip_y_axis(),
-        Direction::Down => matrix.rotate_right().slide_to_left().rotate_left(),
-    };
+    let matrix = matrix.slide(direction);
 
     println!("{}", matrix);
 
