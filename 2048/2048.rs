@@ -161,18 +161,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let lines = std::io::stdin().lines().into_iter();
     let lines = lines.take(5).collect::<Result<Vec<String>, _>>()?;
 
-    let matrix = lines
-        .iter()
+    let (direction, matrix) = lines.split_last().unwrap();
+
+    let matrix = matrix
+        .into_iter()
         .map(|line| {
-            line.split(" ")
-                .take(4)
+            line.split_whitespace()
                 .map(|v| v.parse::<usize>())
                 .collect::<Result<Vec<_>, _>>()
         })
         .collect::<Result<Vec<_>, _>>()?;
     let matrix = SquareMatrix::<_, 4>::try_from(matrix)?;
 
-    let direction = Direction::try_from(lines[4].as_str())?;
+    let direction = Direction::try_from(direction.as_str())?;
 
     let matrix = match direction {
         Direction::Left => matrix.slide_to_left(),
