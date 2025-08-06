@@ -130,7 +130,7 @@ impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
             let mut row = row;
             let mut write_cursor = 0;
 
-            for read_cursor in 1..N {
+            for read_cursor in (write_cursor + 1)..N {
                 if row[read_cursor] == T::default() {
                     continue;
                 }
