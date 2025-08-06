@@ -2,6 +2,7 @@ use std::array;
 use std::convert::TryFrom;
 use std::error::Error;
 use std::fmt::Display;
+use std::fs::read;
 use std::mem;
 use std::ops::{Add, Deref};
 
@@ -118,19 +119,26 @@ impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
     fn slide_to_left(self) -> Self {
         let matrix = self.0.map(|row| {
             let mut row = row;
+            let mut write_cursor = 0;
 
-            for i in 0..N - 1 {
-                for j in i..i + 2 {
-                    if let Some(k) = row[j..].iter().position(|e| *e != T::default()) {
-                        row.swap(j, j + k);
-                    } else {
-                        break;
-                    }
+            for read_cursor in 1..N {
+                if row[read_cursor] == T::default() {
+                    continue;
                 }
 
-                if row[i] == row[i + 1] {
-                    row[i] = mem::take(&mut row[i]) + mem::take(&mut row[i + 1]);
+                if row[write_cursor] == T::default() {
+                    row.swap(read_cursor, write_cursor);
+                    continue;
                 }
+                if row[write_cursor + 1] == T::default() {
+                    row.swap(read_cursor, write_cursor + 1);
+                }
+
+                if row[write_cursor] == row[write_cursor + 1] {
+                    row[write_cursor] =
+                        mem::take(&mut row[write_cursor]) + mem::take(&mut row[write_cursor + 1]);
+                }
+                write_cursor = write_cursor + 1;
             }
 
             row
