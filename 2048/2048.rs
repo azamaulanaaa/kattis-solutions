@@ -134,11 +134,7 @@ impl<T: Add<Output = T> + Default + Eq, const N: usize> SquareMatrix<T, N> {
                 }
 
                 if row[i - 1] == row[i] {
-                    let mut x = T::default();
-                    let mut y = T::default();
-                    mem::swap(&mut x, &mut row[i - 1]);
-                    mem::swap(&mut y, &mut row[i]);
-                    row[i - 1] = x + y;
+                    row[i - 1] = mem::take(&mut row[i - 1]) + mem::take(&mut row[i]);
 
                     if row[i..].iter().any(|e| e != &T::default()) {
                         while row[i] == T::default() {
