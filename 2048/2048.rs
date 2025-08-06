@@ -172,7 +172,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let lines = std::io::stdin().lines().into_iter();
     let lines = lines.take(5).collect::<Result<Vec<String>, _>>()?;
 
-    let (direction, matrix) = lines.split_last().unwrap();
+    if lines.len() != 5 {
+        return Err(format!("Input must be 5 lines but got {} lines", lines.len()).into());
+    }
+
+    let (direction, matrix) = (&lines[4], &lines[0..4]);
 
     let direction = Direction::try_from(direction.as_str())?;
     let matrix = {
